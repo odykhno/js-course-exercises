@@ -1,6 +1,5 @@
-﻿function greaterNum(a,b) {
-if (a>b) return a;
-else return b;
+﻿function greaterNum (a,b) {
+  return (a > b) ? a : b;
 }
 
 function helloWorld(lang) {
@@ -19,17 +18,19 @@ default:
 }
 }
 
-function assignGrade(ball) {
-     if (ball >=1 && ball <=20) {
-     return 1;
-      } else if (ball <= 40) {
-      return 2;
-       } else if (ball <= 60) {
-         return 3;
-         } else if (ball <= 80) {
-           return 4;
-            } else {
-              return 5;
-      }
+function assignGrade(mark) {
+     if (mark <= 0) {
+       return 'Such mark doesn\'t exists';
+     } else if (mark >=1 && mark <=20) {
+       return 1;
+     } else if (mark <= 40) {
+       return 2;
+     } else if (mark <= 60) {
+       return 3;
+     } else if (mark <= 80) {
+       return 4;
+     } else {
+       return 5;
      }
+}
 
