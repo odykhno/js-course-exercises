@@ -1,24 +1,27 @@
 function getGeometricObject(type) {
-  var a = arguments[1],
-      b = arguments[2],
-      c = arguments[3],
+  var result = {
+        type: type
+      }, 
+      opts = ['a','b','c','d'];
+  for (var i = 1; i < arguments.length; i++) {
+    result[opts[i-1]] = arguments[i];
+  }
   //create mapping types to getSquare function
-      geoSq = {
-    'square': function() {
-      return a*a;
-    },
-    'rectangle': function() {
-      return a*b;
-    },
-    'triangle': function() {
-      var p = (a+b+c)/2;
-      return Math.sqrt(p*(p-a)*(p-b)*(p-c));
-    }
-  },
-  result = arguments;
+  var geoSq = {
+        'square': function() {
+          return result.a*result.a;
+        },
+        'rectangle': function() {
+          return result.a*result.b;
+        },
+        'triangle': function() {
+           var p = (result.a+result.b+result.c)/2;
+           return Math.sqrt(p*(p-result.a)*(p-result.b)*(p-result.c));
+        }
+      }
   result.getSquare = function() {
     if (geoSq[type] === undefined) {
-      return 'Such type is unsupported';
+      return 'Type "' + type + '" is unsupported';
     } else {
     return geoSq[type]();
     }
@@ -34,18 +37,18 @@ function Animal(name, type) {
 
 Animal.prototype = {
   noises: {
-  cat: 'meow',
-  dog: 'woof',
-  rat: 'squeak'
+    cat: 'meow',
+    dog: 'woof',
+    rat: 'squeak'
   },
   makeNoise: function() {
     if (this.noises[this.type] === undefined) {
-      return 'Such kind of animal is unsupported';
+      return 'Kind of animal "' + this.type + '" is unsupported';
     } else {
     return this.noises[this.type];
     }
   },
   walk: function(count) {
-    return this.stepCount +=count;
+    return this.stepCount += count;
   }
 };
