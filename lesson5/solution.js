@@ -50,7 +50,7 @@ Animal.prototype = {
     if (this.noises[this.type] === undefined) {
       return 'Kind of animal "' + this.type + '" is unsupported';
     } else {
-    return this.noises[this.type];
+      return this.noises[this.type];
     }
   },
   walk: function(count) {
