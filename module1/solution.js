@@ -7,6 +7,7 @@ function random(min, max) {
 function Battleground() {
   this.rounds = 1;
   this.robots = [];
+  this.aliveCount = 0;
 }
 
 Battleground.prototype.addRobot = function(robot) {
@@ -21,39 +22,37 @@ Battleground.prototype.randomRobot = function(attackingRobot) {
   return damagedRobot;
 };
 
-Battleground.prototype.isDead = function(robot, aliveCount) {
+Battleground.prototype.updateAlive = function(robot) {
   if (!robot.alive) {
-    aliveCount--; // subtract dead robot
+    this.aliveCount--; // subtract dead robot
     console.log(robot.name + ' is out of game');
   }
-  return aliveCount;
+};
+
+Battleground.prototype.logRoundAttack = function(attackingRobot) {
+  console.log('Round ' + this.rounds);
+  console.log(attackingRobot.name + ' attacks with ' + 
+              attackingRobot.weapon.power + ' power ' + 
+              attackingRobot.weapon.type + ' damage');
 };
 
 Battleground.prototype.startBattle = function() {
-  // remember number of alive robots before battle
-  var aliveCount = this.robots.length;
-  while (aliveCount > 1) {
+  this.aliveCount = this.robots.length;
+  while (this.aliveCount > 1) {
     for (var i = 0; i < this.robots.length; i++) {
       if (this.robots[i].alive) { // exclude turn of dead robot
-        console.log('Round ' + this.rounds);
-        console.log(this.robots[i].name + ' attacks with ' + 
-                    this.robots[i].weapon.power + ' power ' + 
-                    this.robots[i].weapon.type + ' damage');
+        this.logRoundAttack(this.robots[i]);
         if (this.robots[i].weapon.type == 'area') {
           for (var j = 0; j < this.robots.length; j++) {
             if (i != j && this.robots[j].alive) {
               this.robots[i].attack(this.robots[j]);
-              console.log(this.robots[j].name + ' receives ' +
-                          this.robots[i].weapon.power + ' points damage');
-              aliveCount = this.isDead(this.robots[j], aliveCount);
+              this.updateAlive(this.robots[j]);
             }
           }
         } else {
           var randRobot = this.randomRobot(i);
           this.robots[i].attack(this.robots[randRobot]);
-          console.log(this.robots[randRobot].name + ' receives ' + 
-                      this.robots[i].weapon.power + ' points damage');
-          aliveCount = this.isDead(this.robots[randRobot], aliveCount);
+          this.updateAlive(this.robots[randRobot]);
         }
         this.rounds++;
       }
@@ -89,7 +88,8 @@ Robot.prototype.receiveDamage = function(points) {
 
 Robot.prototype.attack = function(otherRobot) {
   otherRobot.receiveDamage(this.weapon.power);
-  return otherRobot;
+  console.log(otherRobot.name + ' receives ' +
+              this.weapon.power + ' points damage');
 };
 
 function makeWeapon() {
@@ -111,8 +111,7 @@ function makeBattle(robotCount) {
   }
   var bg = new Battleground();
   for (var i = 0; i < robotCount; i++) {
-    var robotNumber = i+1;
-    var robot = new Robot('Robot' + robotNumber);
+    var robot = new Robot('Robot' + (i+1));
     bg.addRobot(robot);
   }
   return bg;
