@@ -36,26 +36,38 @@ Battleground.prototype.logRoundAttack = function(attackingRobot) {
               attackingRobot.weapon.type + ' damage');
 };
 
+Battleground.prototype.areaDamage = function(attackingRobot) {
+  for (var j = 0; j < this.robots.length; j++) {
+    if (attackingRobot != this.robots[j] && this.robots[j].alive) {
+      attackingRobot.attack(this.robots[j]);
+      this.updateAlive(this.robots[j]);
+    }
+  }
+};
+
+Battleground.prototype.singleDamage = function(attackingRobot) {
+  var randRobot = this.randomRobot(this.robots.indexOf(attackingRobot));
+  attackingRobot.attack(this.robots[randRobot]);
+  this.updateAlive(this.robots[randRobot]);
+};
+
+Battleground.prototype.roundActions = function(attackingRobot) {
+  if (attackingRobot.alive) { // exclude turn of dead robot
+    this.logRoundAttack(attackingRobot);
+    if (attackingRobot.weapon.type == 'area') {
+      this.areaDamage(attackingRobot);
+    } else {
+      this.singleDamage(attackingRobot);
+    }
+    this.rounds++;
+  }
+};
+
 Battleground.prototype.startBattle = function() {
   this.aliveCount = this.robots.length;
   while (this.aliveCount > 1) {
     for (var i = 0; i < this.robots.length; i++) {
-      if (this.robots[i].alive) { // exclude turn of dead robot
-        this.logRoundAttack(this.robots[i]);
-        if (this.robots[i].weapon.type == 'area') {
-          for (var j = 0; j < this.robots.length; j++) {
-            if (i != j && this.robots[j].alive) {
-              this.robots[i].attack(this.robots[j]);
-              this.updateAlive(this.robots[j]);
-            }
-          }
-        } else {
-          var randRobot = this.randomRobot(i);
-          this.robots[i].attack(this.robots[randRobot]);
-          this.updateAlive(this.robots[randRobot]);
-        }
-        this.rounds++;
-      }
+      this.roundActions(this.robots[i]);
     }
   }
   // search for the only alive robot 
