@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Student form</title>
+    <link rel='stylesheet' type='text/css' href='index.css' />
+    <script type='text/javascript' src='index.js'></script>
+  </head>
+  <body>
+    <div class='column'>
+      <h1>Student form</h1>
+      <form action='index.html' method='post'>
+        <div>
+          <label>Name: </label>
+          <input name='name' class='student-name' />
+        </div>
+        <div>
+          <label>Age: </label>
+          <select name='age' class='student-age'>
+            <option>Select age</option>
+          </select>
+        </div>
+        <div>
+          <label>At university:</label>
+          <input name='at_university' type='checkbox' class='student-at-university'>
+        </div>
+        <div>
+          <label>Course 1:</label>
+          <input name='courses[]' class='student-course1'>
+          <button class='remove-course'>Remove course</button>
+        </div>
+        <div>
+          <label>Course 2:</label>
+          <input name='courses[]' class='student-course2'>
+          <button class='remove-course'>Remove course</button>
+        </div>
+        <button class='add-course'>Add Course</button>
+      </form>
+    </div>
+    <div class='column'>
+    </div>
+  </body>
+</html>
