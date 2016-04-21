@@ -9,34 +9,40 @@
     <div class='column'>
       <h1>Student form</h1>
       <form action='index.html' method='post'>
-        <div>
+        <div class='form-group'>
           <label>Name: </label>
           <input name='name' class='student-name' />
         </div>
-        <div>
+        <div class='form-group'>
           <label>Age: </label>
           <select name='age' class='student-age'>
             <option>Select age</option>
           </select>
         </div>
-        <div>
+        <div class='form-group'>
           <label>At university:</label>
           <input name='at_university' type='checkbox' class='student-at-university'>
         </div>
-        <div>
+        <div class='form-group'>
           <label>Course 1:</label>
-          <input name='courses[]' class='student-course1'>
-          <button class='remove-course'>Remove course</button>
+          <input name='courses[]' class='student-course'>
+          <a href='#' class='remove-course'>Remove course</a>
         </div>
-        <div>
+        <div class='form-group'>
           <label>Course 2:</label>
-          <input name='courses[]' class='student-course2'>
-          <button class='remove-course'>Remove course</button>
+          <input name='courses[]' class='student-course'>
+          <a href='#' class='remove-course'>Remove course</a>
         </div>
-        <button class='add-course'>Add Course</button>
+        <div class='form-group'>
+          <a href='#' class='add-course'>Add Course</a>
+        </div>
+        <div class='form-group'>
+          <input type='submit' value='Save'>
+        </div>
       </form>
     </div>
     <div class='column'>
+      <h1>Student data</h1>
     </div>
   </body>
 </html>
