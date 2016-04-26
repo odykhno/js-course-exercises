@@ -1,2 +1,13 @@
 .column{width: 50%; float: left;}
 #text{width: 500px; height: 300px;}
+.buttons{margin-bottom: 10px;}
+#palette{width: 248px; height: 124px; position: absolute; background-color: white; left: 100px; border: 1px solid black;}
+.color-div{float: left; margin-left: 10px; width: 50px; height: 50px; margin-top: 10px; border: 1px solid black; cursor: pointer;}
+.black{background-color: black}
+.white{background-color: white}
+.red{background-color: red}
+.blue{background-color: blue}
+.green{background-color: green}
+.silver{background-color: silver}
+.gold{background-color: yellow}
+.brown{background-color: brown}

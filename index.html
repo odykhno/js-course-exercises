@@ -1,13 +1,29 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Student form</title>
+    <title>Text editor</title>
     <link rel='stylesheet' type='text/css' href='index.css' />
     <script type='text/javascript' src='index.js'></script>
   </head>
   <body>
     <div class='column'>
       <h1>Editor</h1>
+      <div class='buttons'>
+        <button class='bold'>Bold</button>
+        <button class='italic'>Italic</button>
+        Text size: <select name='text-size' class='text-size'></select>
+        <button class='text-color'>Text color</button>
+        <div id='palette'>
+          <div class='color-div black'></div>
+          <div class='color-div white'></div>
+          <div class='color-div red'></div>
+          <div class='color-div blue'></div>
+          <div class='color-div green'></div>
+          <div class='color-div silver'></div>
+          <div class='color-div gold'></div>
+          <div class='color-div brown'></div>
+        </div>
+      </div>
       <textarea id='text'>
       </textarea>
     </div>
