@@ -2,4 +2,6 @@
 .form-group, .student-data{padding: 10px 0;}
 .form-group label, .student-data label{width: 100px; display: inline-block;}
 .student-data{height: 21.33px;}
+.right-column{opacity: 100;}
+.right-column span{opacity: 100;}
 select{width: 173px;}
