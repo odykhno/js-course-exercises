@@ -7,7 +7,7 @@ $(function() {
   var $studentDataContainer = $('div.student-data-container').parent();
   var $studentFormContainer = $('div.student-form-container').parent();
   var $studentTableBody = $('tbody');
-  //var $studentDataSpans = ;
+  var $studentDataSpans = $('div.student-data-container').find('span');
   
   $studentDataContainer.hide();
   $studentFormContainer.hide();
@@ -23,7 +23,7 @@ $(function() {
   }
 
   $studentTableBody.empty();
-  $('div.student-data-container').find('span').empty();
+  $studentDataSpans.empty();
 
   $.get({
     url: 'https://spalah-js-students.herokuapp.com/students',
@@ -36,6 +36,7 @@ $(function() {
     }
   });
 
+// show button handler
 $studentListingContainer.delegate('a.btn.btn-default', 'click', function(event) {
   $studentListingContainer.fadeOut(500, function() {
     $studentDataContainer.fadeIn(500);
@@ -46,14 +47,15 @@ $studentListingContainer.delegate('a.btn.btn-default', 'click', function(event) 
     contentType: 'application/json',
     datatype: 'json',
     success: function(student) {
-      $('div.student-data-container').find('span.stundent-full-name').text(student.data.first_name + ' ' + student.data.last_name);
-      $('div.student-data-container').find('span.student-age').text(student.data.age);
-      $('div.student-data-container').find('span.student-at-university').text(student.data.at_university ? 'Yes' : 'No');
-      $('div.student-data-container').find('span.student-course').each(function(index) {
+      $('span.stundent-full-name').text(student.data.first_name + ' ' + student.data.last_name);
+      $('span.student-age').text(student.data.age);
+      $('span.student-at-university').text(student.data.at_university ? 'Yes' : 'No');
+      $('span.student-course').each(function(index) {
         $(this).text(student.data.courses[index]);
       });
     }
   });
+  event.preventDefault();
 });
   
 });
