@@ -4,9 +4,15 @@
     <meta charset="utf-8">
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+<<<<<<< HEAD
     <script type='text/javascript'
             src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js">
     </script>
+=======
+    <link rel="stylesheet" href="css/jquery-ui.min.css">
+    <script type='text/javascript' src="js/jquery.min.js"></script>
+    <script type='text/javascript' src="js/jquery-ui.min.js"></script>
+>>>>>>> e0c811808243fcc12b48579f0097c18a93d196a2
     <script type='text/javascript' src='index.js'></script>
   </head>
   <body>
@@ -19,12 +25,15 @@
     <div class="jumbotron">
       <div class="container student-listing-container">
         <h2>Students</h2>
+        <div class="alert alert-success">
+          User was successfully created
+        </div>
         <table class=" table table-hover">
           <thead>
             <tr>
               <th>First Name</th>
               <th>Last Name</th>
-              <th></th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -63,13 +72,16 @@
     <div class="jumbotron">
       <div class="container student-data-container">
         <h2>Student Profile</h1>
+        <div class="alert alert-success">
+          User was successfully updated
+        </div>
         <div class="panel panel-default">
 			    <div class="panel-body">
             <div class="row">
               <div class="student-data col-xs-12 col-sm-8">
                 <div class="student-data-group">
                   <b>Full Name: </b>
-                  <span class='stundent-full-name'>Ahmud Alipashaev</span>
+                  <span class='student-full-name'>Ahmud Alipashaev</span>
                 </div>
                 <div class="student-data-group">
                   <b>Age: </b>
