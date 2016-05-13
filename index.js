@@ -18,6 +18,7 @@ $(function() {
   $studentDataContainer.hide();
   $studentFormContainer.hide();
   $('div.alert.alert-danger').hide();
+  $('div.alert.alert-success').hide();
 
   // form Select filling
   for (var i = MIN_AGE; i <= MAX_AGE; i++) {
@@ -98,6 +99,18 @@ $(function() {
     $studentDataContainer.fadeOut(500, function() {
       $studentFormContainer.fadeIn(500);
     });
+    $('input.first-name').val($('span.student-full-name').text().split(' ')[0]);
+    $('input.last-name').val($('span.student-full-name').text().split(' ')[1]);
+    $('select.student-age').val($('span.student-age').text());
+    $('input.student-at-university').prop("checked", 
+                $('span.student-at-university').text() == 'Yes' ? true : false);
+    //if ($('span.student-course').length <= 2) {
+      $('input.student-course').each(function(index) {
+        $(this).val($('span.student-course').map(function() {
+          return $(this).text();
+        })[index]);
+      }); 
+    //}
     event.preventDefault();
   });
 
