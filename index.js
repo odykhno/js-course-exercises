@@ -60,28 +60,33 @@ $(function() {
     }
   });
 
+  // GET request
+  function getStudentById(elem, callback) {
+    var selectedStudent = $(elem).parent().data('id');
+    $.get({
+      url: 'https://spalah-js-students.herokuapp.com/students/'+ selectedStudent,
+      contentType: 'application/json',
+      datatype: 'json',
+      success: callback
+    });
+  }
+
   // show button handler
   $studentListingContainer.delegate('a.btn.btn-default', 'click', function(event) {
     $studentListingContainer.fadeOut(500, function() {
       $studentDataContainer.fadeIn(500);
     });
     $coursesDiv.empty();
-    var selectedStudent = $(event.target).parent().data('id');
-    $.get({
-      url: 'https://spalah-js-students.herokuapp.com/students/'+ selectedStudent,
-      contentType: 'application/json',
-      datatype: 'json',
-      success: function(student) {
-        $('span.student-full-name').text(student.data.first_name + ' ' + 
-                                          student.data.last_name);
-        $('span.student-age').text(student.data.age);
-        $('span.student-at-university').text(student.data.at_university ? 'Yes' 
-                                             : 'No');
-        $.each(student.data.courses, function(index) {
-          $coursesDiv.append(studentCourseView(index + 1, 
-                                               student.data.courses[index]));
-        });
-      }
+    getStudentById(event.target, function(student) {
+      $('span.student-full-name').text(student.data.first_name + ' ' + 
+                                       student.data.last_name);
+      $('span.student-age').text(student.data.age);
+      $('span.student-at-university').text(student.data.at_university ? 'Yes' : 
+                                           'No');
+      $.each(student.data.courses, function(index) {
+        $coursesDiv.append(studentCourseView(index + 1, 
+                                             student.data.courses[index]));
+      });  
     });
     event.preventDefault();
   });
@@ -109,8 +114,29 @@ $(function() {
         $(this).val($('span.student-course').map(function() {
           return $(this).text();
         })[index]);
-      }); 
-    //}
+      });  
+    //}// сделать отрисовку курсов заново и считывание туда
+    event.preventDefault();
+  });
+
+  // edit button handler on on $studentListingContainer
+  $studentListingContainer.delegate('a.btn.btn-primary', 'click', function(event) {
+    $studentListingContainer.fadeOut(500, function() {
+      $studentFormContainer.fadeIn(500);
+    });
+    $('form')[0].reset();// сделать отрисовку курсов заново и считывание туда
+    getStudentById(event.target, function(student) {
+      $('input.first-name').val(student.data.first_name);
+      $('input.last-name').val(student.data.last_name);
+      $('select.student-age').val(student.data.age);
+      $('input.student-at-university').prop("checked", 
+                                    student.data.at_university ? 'Yes' : 'No');
+      //if (student.data.courses.length <= 2) {
+        $.each(student.data.courses, function(index) {
+          $('input.student-course').val(student.data.courses[index]);
+        });
+      //}
+    });
     event.preventDefault();
   });
 
@@ -126,6 +152,7 @@ $(function() {
   $studentListingContainer.find('a.btn.btn-success').click(function(event) {
   	$studentListingContainer.fadeOut(500, function() {
       $studentFormContainer.fadeIn(500);
+      $('form')[0].reset();
     });
   	event.preventDefault();
   });
@@ -172,9 +199,8 @@ $(function() {
 
   // submit data about new student
   $('form').submit(function(event) {
-  	console.log(createDataObject());
-  	//event.preventDefault();
-    $.post('https://spalah-js-students.herokuapp.com/students', createDataObject());
+    var newStudent = createDataObject();
+    $.post('https://spalah-js-students.herokuapp.com/students', newStudent);
   });
 
 });
