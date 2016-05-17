@@ -1,7 +1,7 @@
 'use strict';
 
-var MIN_AGE = 1;
-var MAX_AGE = 99;
+var MIN_AGE = 16;
+var MAX_AGE = 70;
 
 $(function() {
 
@@ -10,14 +10,17 @@ $(function() {
   var $studentDataContainer = $('div.student-data-container').parent();
   var $studentFormContainer = $('div.student-form-container').parent();
   var $studentTableBody = $('tbody');
+  var $divAlertDanger = $('div.alert.alert-danger');
+  var $editOnDataContainer = $studentDataContainer.find('a.btn.btn-primary');
   var $coursesDiv = $('div.student-data-group').has('div.course-group');
   var $studentDataSpans = $('div.student-data-container').find('span');
   var $divCourseTemplate = $('div.form-group').has('label:contains("Course 1:")')
                            .clone(true);
+  var isNewStudent;
   
   $studentDataContainer.hide();
   $studentFormContainer.hide();
-  $('div.alert.alert-danger').hide();
+  $divAlertDanger.hide();
   $('div.alert.alert-success').hide();
 
   // form Select filling
@@ -36,7 +39,7 @@ $(function() {
                              attr('href', '#');
     var $actionsTd = $('<td>').data('id', student.id).append($studentShowAnchor, 
                                     $studentEditAnchor, $studentDeleteAnchor);
-    return $('<tr>').append($firstNameTd, $lastNameTd, $actionsTd);
+    return $('<tr>').data('id', student.id).append($firstNameTd, $lastNameTd, $actionsTd);
   }
 
   function studentCourseView(number, course) {
@@ -45,22 +48,47 @@ $(function() {
     return $('<div>').addClass('course-group').append($courseB, $courseSpan);
   }
 
+  function formStudentCourseView(number, course) {
+    var $newCourse = $divCourseTemplate.clone(true);
+    $newCourse.children('label').text('Course ' + number + ':');
+    $newCourse.children('input').val(course);
+    return $('a.add-course').parent().before($newCourse);
+  }
+
   $studentTableBody.empty();
   $studentDataSpans.empty();
-    
-  // loading list from server
-  $.get({
-    url: 'https://spalah-js-students.herokuapp.com/students',
-    contentType: 'application/json',
-    datatype: 'json',
-    success: function(students) {
-      $.each(students.data, function(index, student) {
-        $studentTableBody.append(studentRowView(student));
-      });
-    }
-  });
+  $divAlertDanger.find('li').remove();
+  window.localStorage.clear();
+  
+  // loading list from localStorage or server
+  if (localStorage.getItem('studentsOrder')) {
+    var order = localStorage.getItem('studentsOrder').split(',');
+    $.get({
+      url: 'https://spalah-js-students.herokuapp.com/students',
+      contentType: 'application/json',
+      datatype: 'json',
+      success: function(students) {
+        for (var i = 0; i < order.length; i++) {
+          $studentTableBody.append(studentRowView(students.data[order[i] - 2]));
+        }
+      }
+    });
+  } else {
+    $.get({
+      url: 'https://spalah-js-students.herokuapp.com/students',
+      contentType: 'application/json',
+      datatype: 'json',
+      success: function(students) {
+        $.each(students.data, function(index, student) {
+          $studentTableBody.append(studentRowView(student));
+        });
+      }
+    });
+  }
 
-  // GET request
+  $studentTableBody.sortable();
+
+  // GET request by Id
   function getStudentById(elem, callback) {
     var selectedStudent = $(elem).parent().data('id');
     $.get({
@@ -78,6 +106,7 @@ $(function() {
     });
     $coursesDiv.empty();
     getStudentById(event.target, function(student) {
+      $('div.student-data-container').data('id', student.data.id);
       $('span.student-full-name').text(student.data.first_name + ' ' + 
                                        student.data.last_name);
       $('span.student-age').text(student.data.age);
@@ -98,51 +127,40 @@ $(function() {
     });
     event.preventDefault();
   });
-  
-  // edit button handler on $studentDataContainer
-  $studentDataContainer.find('a.btn.btn-primary').click(function(event) {
-    $studentDataContainer.fadeOut(500, function() {
-      $studentFormContainer.fadeIn(500);
-    });
-    $('input.first-name').val($('span.student-full-name').text().split(' ')[0]);
-    $('input.last-name').val($('span.student-full-name').text().split(' ')[1]);
-    $('select.student-age').val($('span.student-age').text());
-    $('input.student-at-university').prop("checked", 
-                $('span.student-at-university').text() == 'Yes' ? true : false);
-    //if ($('span.student-course').length <= 2) {
-      $('input.student-course').each(function(index) {
-        $(this).val($('span.student-course').map(function() {
-          return $(this).text();
-        })[index]);
-      });  
-    //}// сделать отрисовку курсов заново и считывание туда
-    event.preventDefault();
-  });
 
-  // edit button handler on on $studentListingContainer
-  $studentListingContainer.delegate('a.btn.btn-primary', 'click', function(event) {
-    $studentListingContainer.fadeOut(500, function() {
+  function editHandler(currentContainer, elem) {
+    currentContainer.fadeOut(500, function() {
       $studentFormContainer.fadeIn(500);
     });
-    $('form')[0].reset();// сделать отрисовку курсов заново и считывание туда
-    getStudentById(event.target, function(student) {
+    $('form')[0].reset();
+    $('input.form-control.student-course').parent().remove();
+    isNewStudent = false;
+    getStudentById(elem, function(student) {
       $('input.first-name').val(student.data.first_name);
       $('input.last-name').val(student.data.last_name);
       $('select.student-age').val(student.data.age);
-      $('input.student-at-university').prop("checked", 
-                                    student.data.at_university ? 'Yes' : 'No');
-      //if (student.data.courses.length <= 2) {
-        $.each(student.data.courses, function(index) {
-          $('input.student-course').val(student.data.courses[index]);
-        });
-      //}
+      $('input.student-at-university').prop("checked", student.data.at_university);
+      $.each(student.data.courses, function(index) {
+        formStudentCourseView(index + 1, student.data.courses[index]);
+      });
     });
+  }
+
+  // edit button handler on $studentDataContainer
+  $editOnDataContainer.click(function(event) {
+    editHandler($studentDataContainer, $editOnDataContainer);
+    event.preventDefault();
+  });
+
+  // edit button handler on $studentListingContainer
+  $studentListingContainer.delegate('a.btn.btn-primary', 'click', function(event) {
+    editHandler($studentListingContainer, event.target);
     event.preventDefault();
   });
 
   // back button handler on $studentFormContainer
   $studentFormContainer.find('a.btn.btn-default').click(function(event) {
-  	$studentFormContainer.fadeOut(500, function() {
+    $studentFormContainer.fadeOut(500, function() {
       $studentDataContainer.fadeIn(500);
     });
     event.preventDefault();
@@ -150,11 +168,21 @@ $(function() {
 
   // adding student
   $studentListingContainer.find('a.btn.btn-success').click(function(event) {
-  	$studentListingContainer.fadeOut(500, function() {
+    $studentListingContainer.fadeOut(500, function() {
       $studentFormContainer.fadeIn(500);
       $('form')[0].reset();
+      $divAlertDanger.hide();
     });
-  	event.preventDefault();
+    isNewStudent = true;
+    var studentsOrder = [];
+    var $studentsOrder = $studentTableBody.find('tr').map(function(index) {
+      return $(this).data('id');
+    });
+    $studentsOrder.each(function(index) {
+      studentsOrder.push($studentsOrder[index]);
+    });
+    localStorage.setItem('studentsOrder', studentsOrder);
+    event.preventDefault();
   });
 
   // adding course
@@ -199,8 +227,41 @@ $(function() {
 
   // submit data about new student
   $('form').submit(function(event) {
-    var newStudent = createDataObject();
-    $.post('https://spalah-js-students.herokuapp.com/students', newStudent);
+    $divAlertDanger.find('li').remove();
+    if (isNewStudent) {
+      $.post('https://spalah-js-students.herokuapp.com/students', createDataObject(), 
+           function(data) {
+        if (data.errors) {
+          $divAlertDanger.fadeIn(500);
+          $.each(data.errors, function(index, error) {
+            var $error_li = $('<li>').addClass('list-group-item').text(error);
+            $('ul').append($error_li);
+          });    
+        } else {
+          $('div.alert.alert-success:contains("created")').fadeIn(500);
+        }
+      });
+       // разобраться с отменой умолчания
+    } else {
+      var selectedStudent = $editOnDataContainer.parent().data('id'); // добавить второй edit через или
+      $.ajax({
+        url: 'https://spalah-js-students.herokuapp.com/students/' + selectedStudent,
+        type: 'PUT',
+        data: createDataObject(),
+        success: function(data) {
+          if (data.errors) {
+            $divAlertDanger.fadeIn(500);
+            $.each(data.errors, function(index, error) {
+              var $error_li = $('<li>').addClass('list-group-item').text(error);
+              $('ul').append($error_li);
+            });    
+          } else {
+            $('div.alert.alert-success:contains("updated")').fadeIn(500);
+          }
+        }
+      }); 
+    } 
+    event.preventDefault();
   });
 
 });
