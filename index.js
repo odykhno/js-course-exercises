@@ -16,6 +16,7 @@ $(function() {
   var $studentDataSpans = $('div.student-data-container').find('span');
   var $divCourseTemplate = $('div.form-group').has('label:contains("Course 1:")')
                            .clone(true);
+  var isBackToListing; // indicator for correct back returns
   var isNewStudent; // indicator for PUT or POST request
   var studentId; // selected student for PUT request
   
@@ -29,7 +30,7 @@ $(function() {
     $('select.student-age').append($('<option>').text(i).val(i));
   }
 
-  // delete or clean out unnessesary elems
+  // delete or clean out unnessesary elems !!! дописать!!!
   function pageReset() {
     $studentDataSpans.empty();
     $coursesDiv.empty();
@@ -155,6 +156,7 @@ $(function() {
   // edit button handler on $studentDataContainer
   $editOnDataContainer.click(function(event) {
     editHandler($studentDataContainer, $editOnDataContainer);
+    isBackToListing = false;
     event.preventDefault();
   });
 
@@ -162,13 +164,36 @@ $(function() {
   $studentListingContainer.delegate('a.btn.btn-primary', 'click', function(event) {
     editHandler($studentListingContainer, event.target);
     studentId = $(event.target).parent().data('id');
+    isBackToListing = true;
+    event.preventDefault();
+  });
+
+  // delete student
+  $studentListingContainer.delegate('a.btn.btn-danger', 'click', function(event) {
+    var selectedStudent = $(event.target).parent().data('id');
+    var $deletedTr = $(event.target).closest('tr');
+    if (confirm('Do you really want to delete this student?')) {
+      $.ajax({
+        url: 'https://spalah-js-students.herokuapp.com/students/' + selectedStudent,
+        type: 'DELETE', 
+        success: function(data) {
+          if (data.data) {
+            $deletedTr.remove();
+          }
+        }
+      });
+    }
     event.preventDefault();
   });
 
   // back button handler on $studentFormContainer
   $studentFormContainer.find('a.btn.btn-default').click(function(event) {
     $studentFormContainer.fadeOut(500, function() {
-      $studentDataContainer.fadeIn(500);
+      if (isBackToListing) {
+        $studentListingContainer.fadeIn(500);
+      } else {
+        $studentDataContainer.fadeIn(500);
+      }
     });
     event.preventDefault();
   });
@@ -180,7 +205,8 @@ $(function() {
       $('form')[0].reset();
       $divAlertDanger.hide();
     });
-    isNewStudent = true;
+    isNewStudent = true;   // добавить обновление формы(2 курса, не 3)
+    isBackToListing = true;
     var studentsOrder = [];
     var $studentsOrder = $studentTableBody.find('tr').map(function(index) {
       return $(this).data('id');
@@ -232,7 +258,7 @@ $(function() {
     return result;
   }
 
-  // submit data about new student
+  // submit data (add or update)
   $('form').submit(function(event) {
     $divAlertDanger.find('li').remove();
     if (isNewStudent) {
@@ -245,10 +271,13 @@ $(function() {
             $('ul').append($error_li);
           });    
         } else {
-          $('div.alert.alert-success:contains("created")').fadeIn(500);
+          $studentFormContainer.fadeOut(500, function() {
+            $studentListingContainer.fadeIn(500);
+            $('div.alert.alert-success:contains("created")').fadeIn(500);
+            $studentTableBody.append(studentRowView(data.data));
+          });
         }
       });
-       // разобраться с отменой умолчания
     } else {
       var selectedStudent = $editOnDataContainer.parent().data('id') || studentId;
       $.ajax({
@@ -263,7 +292,11 @@ $(function() {
               $('ul').append($error_li);
             });    
           } else {
-            $('div.alert.alert-success:contains("updated")').fadeIn(500);
+            $studentFormContainer.fadeOut(500, function() {
+              $studentDataContainer.fadeIn(500);
+              $('div.alert.alert-success:contains("updated")').fadeIn(500);
+              // прочитать из ответа инфу в дата форму
+            });
           }
         }
       }); 
