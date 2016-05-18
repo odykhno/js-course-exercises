@@ -16,7 +16,8 @@ $(function() {
   var $studentDataSpans = $('div.student-data-container').find('span');
   var $divCourseTemplate = $('div.form-group').has('label:contains("Course 1:")')
                            .clone(true);
-  var isNewStudent;
+  var isNewStudent; // indicator for PUT or POST request
+  var studentId; // selected student for PUT request
   
   $studentDataContainer.hide();
   $studentFormContainer.hide();
@@ -26,6 +27,12 @@ $(function() {
   // form Select filling
   for (var i = MIN_AGE; i <= MAX_AGE; i++) {
     $('select.student-age').append($('<option>').text(i).val(i));
+  }
+
+  // delete or clean out unnessesary elems
+  function pageReset() {
+    $studentDataSpans.empty();
+    $coursesDiv.empty();
   }
 
   function studentRowView(student) {
@@ -56,7 +63,6 @@ $(function() {
   }
 
   $studentTableBody.empty();
-  $studentDataSpans.empty();
   $divAlertDanger.find('li').remove();
   window.localStorage.clear();
   
@@ -104,7 +110,7 @@ $(function() {
     $studentListingContainer.fadeOut(500, function() {
       $studentDataContainer.fadeIn(500);
     });
-    $coursesDiv.empty();
+    pageReset();
     getStudentById(event.target, function(student) {
       $('div.student-data-container').data('id', student.data.id);
       $('span.student-full-name').text(student.data.first_name + ' ' + 
@@ -155,6 +161,7 @@ $(function() {
   // edit button handler on $studentListingContainer
   $studentListingContainer.delegate('a.btn.btn-primary', 'click', function(event) {
     editHandler($studentListingContainer, event.target);
+    studentId = $(event.target).parent().data('id');
     event.preventDefault();
   });
 
@@ -243,7 +250,7 @@ $(function() {
       });
        // разобраться с отменой умолчания
     } else {
-      var selectedStudent = $editOnDataContainer.parent().data('id'); // добавить второй edit через или
+      var selectedStudent = $editOnDataContainer.parent().data('id') || studentId;
       $.ajax({
         url: 'https://spalah-js-students.herokuapp.com/students/' + selectedStudent,
         type: 'PUT',
