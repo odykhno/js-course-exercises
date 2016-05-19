@@ -105,6 +105,17 @@ $(function() {
       success: callback
     });
   }
+  
+  function fillingStudentData(student) {
+    $('div.student-data-container').data('id', student.data.id);
+    $('span.student-full-name').text(student.data.first_name + ' ' + 
+                                     student.data.last_name);
+    $('span.student-age').text(student.data.age);
+    $('span.student-at-university').text(student.data.at_university ? 'Yes' : 'No');
+    $.each(student.data.courses, function(index) {
+      $coursesDiv.append(studentCourseView(index + 1, student.data.courses[index]));
+    });  
+  }
 
   // show button handler
   $studentListingContainer.delegate('a.btn.btn-default', 'click', function(event) {
@@ -113,21 +124,12 @@ $(function() {
     });
     pageReset();
     getStudentById(event.target, function(student) {
-      $('div.student-data-container').data('id', student.data.id);
-      $('span.student-full-name').text(student.data.first_name + ' ' + 
-                                       student.data.last_name);
-      $('span.student-age').text(student.data.age);
-      $('span.student-at-university').text(student.data.at_university ? 'Yes' : 
-                                           'No');
-      $.each(student.data.courses, function(index) {
-        $coursesDiv.append(studentCourseView(index + 1, 
-                                             student.data.courses[index]));
-      });  
+      fillingStudentData(student);
     });
     event.preventDefault();
   });
 
-  // back button handler on $studentDataContainer
+  // back button handler on $studentDataContainer при возврате после эдита обновить список!
   $studentDataContainer.find('a.btn.btn-default').click(function(event) {
     $studentDataContainer.fadeOut(500, function() {
       $studentListingContainer.fadeIn(500);
@@ -258,7 +260,7 @@ $(function() {
     return result;
   }
 
-  // submit data (add or update)
+  // submit data (add or update)     !!!объединить пут и пост в одну функцию!!!
   $('form').submit(function(event) {
     $divAlertDanger.find('li').remove();
     if (isNewStudent) {
@@ -295,7 +297,8 @@ $(function() {
             $studentFormContainer.fadeOut(500, function() {
               $studentDataContainer.fadeIn(500);
               $('div.alert.alert-success:contains("updated")').fadeIn(500);
-              // прочитать из ответа инфу в дата форму
+              pageReset();
+              fillingStudentData(data);
             });
           }
         }
