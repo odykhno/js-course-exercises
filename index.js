@@ -1,7 +1,8 @@
 'use strict';
 
-var MIN_AGE = 16;
-var MAX_AGE = 70;
+var MIN_AGE = 1;
+var MAX_AGE = 99;
+var studentSequence = JSON.parse(localStorage.getItem('studentSequence'));
 
 $(function() {
 
@@ -17,23 +18,44 @@ $(function() {
   var $divCourseTemplate = $('div.form-group').has('label:contains("Course 1:")')
                            .clone(true);
   var isBackToListing; // indicator for correct back returns
+  var isStudentUpdated; // indicator for correct back after udating
   var isNewStudent; // indicator for PUT or POST request
   var studentId; // selected student for PUT request
-  
+  var studentDataForUpdate;
+
+  pageReset();
   $studentDataContainer.hide();
   $studentFormContainer.hide();
-  $divAlertDanger.hide();
-  $('div.alert.alert-success').hide();
+  $studentTableBody.empty();
+  $divAlertDanger.find('li').remove();
+  window.localStorage.clear();
+
+  // sortable !!!ширину строк пофиксить и удалить всё лишнее из кода про локалсторадж!!!
+  /*$studentTableBody.sortable({
+    deactivate: function(event, ui) {
+      var studentSequence = [];
+      $.each('$(tbody tr td:last-child'), function(index, td) {
+
+      })
+    }
+  });*/
 
   // form Select filling
   for (var i = MIN_AGE; i <= MAX_AGE; i++) {
     $('select.student-age').append($('<option>').text(i).val(i));
   }
 
-  // delete or clean out unnessesary elems !!! дописать!!!
+  // delete or clean out unnessesary elems !!! протестить!!!
   function pageReset() {
     $studentDataSpans.empty();
     $coursesDiv.empty();
+    $divAlertDanger.hide();
+    $('div.alert.alert-success').hide();
+    $('form')[0].reset();
+    $('input.form-control.student-course').parent().remove();
+    for (var i = 1; i <= 2; i++) {
+      formStudentCourseView(i, '');
+    }
   }
 
   function studentRowView(student) {
@@ -45,9 +67,9 @@ $(function() {
                              attr('href', '#');
     var $studentDeleteAnchor = $('<a>').html('Delete').addClass('btn btn-danger').
                              attr('href', '#');
-    var $actionsTd = $('<td>').data('id', student.id).append($studentShowAnchor, 
-                                    $studentEditAnchor, $studentDeleteAnchor);
-    return $('<tr>').data('id', student.id).append($firstNameTd, $lastNameTd, $actionsTd);
+    var $actionsTd = $('<td>').attr('data-id', student.id).append
+                ($studentShowAnchor, $studentEditAnchor, $studentDeleteAnchor);
+    return $('<tr>').append($firstNameTd, $lastNameTd, $actionsTd);
   }
 
   function studentCourseView(number, course) {
@@ -62,10 +84,6 @@ $(function() {
     $newCourse.children('input').val(course);
     return $('a.add-course').parent().before($newCourse);
   }
-
-  $studentTableBody.empty();
-  $divAlertDanger.find('li').remove();
-  window.localStorage.clear();
   
   // loading list from localStorage or server
   if (localStorage.getItem('studentsOrder')) {
@@ -91,9 +109,7 @@ $(function() {
         });
       }
     });
-  }
-
-  $studentTableBody.sortable();
+  } 
 
   // GET request by Id
   function getStudentById(elem, callback) {
@@ -107,7 +123,7 @@ $(function() {
   }
   
   function fillingStudentData(student) {
-    $('div.student-data-container').data('id', student.data.id);
+    $('div.student-data-container').attr('data-id', student.data.id);
     $('span.student-full-name').text(student.data.first_name + ' ' + 
                                      student.data.last_name);
     $('span.student-age').text(student.data.age);
@@ -129,7 +145,7 @@ $(function() {
     event.preventDefault();
   });
 
-  // back button handler on $studentDataContainer при возврате после эдита обновить список!
+  // back button handler on $studentDataContainer
   $studentDataContainer.find('a.btn.btn-default').click(function(event) {
     $studentDataContainer.fadeOut(500, function() {
       $studentListingContainer.fadeIn(500);
@@ -141,7 +157,6 @@ $(function() {
     currentContainer.fadeOut(500, function() {
       $studentFormContainer.fadeIn(500);
     });
-    $('form')[0].reset();
     $('input.form-control.student-course').parent().remove();
     isNewStudent = false;
     getStudentById(elem, function(student) {
@@ -155,7 +170,7 @@ $(function() {
     });
   }
 
-  // edit button handler on $studentDataContainer
+  // edit button handler on $studentDataContainer  !!!неправильно работает ID после show - разобраться!!!
   $editOnDataContainer.click(function(event) {
     editHandler($studentDataContainer, $editOnDataContainer);
     isBackToListing = false;
@@ -173,14 +188,14 @@ $(function() {
   // delete student
   $studentListingContainer.delegate('a.btn.btn-danger', 'click', function(event) {
     var selectedStudent = $(event.target).parent().data('id');
-    var $deletedTr = $(event.target).closest('tr');
     if (confirm('Do you really want to delete this student?')) {
       $.ajax({
         url: 'https://spalah-js-students.herokuapp.com/students/' + selectedStudent,
         type: 'DELETE', 
         success: function(data) {
           if (data.data) {
-            $deletedTr.remove();
+            $studentTableBody.find('td[data-id=' + data.data.id + ']').parent().
+                                                                       remove();
           }
         }
       });
@@ -204,10 +219,9 @@ $(function() {
   $studentListingContainer.find('a.btn.btn-success').click(function(event) {
     $studentListingContainer.fadeOut(500, function() {
       $studentFormContainer.fadeIn(500);
-      $('form')[0].reset();
-      $divAlertDanger.hide();
+      pageReset();
     });
-    isNewStudent = true;   // добавить обновление формы(2 курса, не 3)
+    isNewStudent = true;
     isBackToListing = true;
     var studentsOrder = [];
     var $studentsOrder = $studentTableBody.find('tr').map(function(index) {
@@ -247,7 +261,7 @@ $(function() {
     });
   }
 
-  function createDataObject() {
+  function createDataObject() { // check syntax
     var result = {student: {}};
     result.student.first_name = $('input.first-name').val();
     result.student.last_name = $('input.last-name').val();
@@ -260,12 +274,12 @@ $(function() {
     return result;
   }
 
-  // submit data (add or update)     !!!объединить пут и пост в одну функцию!!!
-  $('form').submit(function(event) {
-    $divAlertDanger.find('li').remove();
-    if (isNewStudent) {
-      $.post('https://spalah-js-students.herokuapp.com/students', createDataObject(), 
-           function(data) {
+  function submitRequest(url, type, callback) {
+    $.ajax({
+      url: url,
+      type: type,
+      data: createDataObject(),
+      success: function(data) {
         if (data.errors) {
           $divAlertDanger.fadeIn(500);
           $.each(data.errors, function(index, error) {
@@ -273,38 +287,48 @@ $(function() {
             $('ul').append($error_li);
           });    
         } else {
-          $studentFormContainer.fadeOut(500, function() {
-            $studentListingContainer.fadeIn(500);
-            $('div.alert.alert-success:contains("created")').fadeIn(500);
-            $studentTableBody.append(studentRowView(data.data));
-          });
+          callback(data);
         }
+      }
+    }); 
+  }
+
+  // submit data (add or update)
+  $('form').submit(function(event) {
+    $divAlertDanger.find('li').remove();
+    if (isNewStudent) {
+      submitRequest('https://spalah-js-students.herokuapp.com/students', 'POST', 
+                    function(data) {
+        $studentFormContainer.fadeOut(500, function() {
+          $studentListingContainer.fadeIn(500);
+          $('div.alert.alert-success:contains("created")').fadeIn(500);
+          $studentTableBody.append(studentRowView(data.data));
+          isStudentUpdated = false;
+        });
       });
     } else {
-      var selectedStudent = $editOnDataContainer.parent().data('id') || studentId;
-      $.ajax({
-        url: 'https://spalah-js-students.herokuapp.com/students/' + selectedStudent,
-        type: 'PUT',
-        data: createDataObject(),
-        success: function(data) {
-          if (data.errors) {
-            $divAlertDanger.fadeIn(500);
-            $.each(data.errors, function(index, error) {
-              var $error_li = $('<li>').addClass('list-group-item').text(error);
-              $('ul').append($error_li);
-            });    
+      var selectedStudent = studentId || $editOnDataContainer.parent().data('id');
+      submitRequest('https://spalah-js-students.herokuapp.com/students/' + 
+                    selectedStudent, 'PUT', function(data) {
+        $studentFormContainer.fadeOut(500, function() {
+          $studentDataContainer.fadeIn(500);
+          pageReset();
+          $('div.alert.alert-success:contains("updated")').fadeIn(500);
+          fillingStudentData(data);
+          var $updatedTr = $studentTableBody.find('td[data-id=' + data.data.id + 
+                                                  ']').parent();
+          if ($updatedTr.find('td:last').data('id') === $('tr:last td:last').data('id')) {
+            $studentTableBody.append(studentRowView(data.data));
+            $updatedTr.remove();
           } else {
-            $studentFormContainer.fadeOut(500, function() {
-              $studentDataContainer.fadeIn(500);
-              $('div.alert.alert-success:contains("updated")').fadeIn(500);
-              pageReset();
-              fillingStudentData(data);
-            });
-          }
-        }
-      }); 
+            studentRowView(data.data).insertBefore($updatedTr.next());
+            $updatedTr.remove();
+          }         
+        });
+      });
     } 
     event.preventDefault();
   });
 
 });
+
