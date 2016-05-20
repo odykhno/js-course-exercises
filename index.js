@@ -3,6 +3,7 @@
 var MIN_AGE = 1;
 var MAX_AGE = 99;
 var studentSequence = JSON.parse(localStorage.getItem('studentSequence'));
+var URL = 'https://spalah-js-students.herokuapp.com/students';
 
 $(function() {
 
@@ -21,7 +22,6 @@ $(function() {
   var isStudentUpdated; // indicator for correct back after udating
   var isNewStudent; // indicator for PUT or POST request
   var studentId; // selected student for PUT request
-  var studentDataForUpdate;
 
   pageReset();
   $studentDataContainer.hide();
@@ -31,14 +31,15 @@ $(function() {
   window.localStorage.clear();
 
   // sortable !!!ширину строк пофиксить и удалить всё лишнее из кода про локалсторадж!!!
-  /*$studentTableBody.sortable({
+  $studentTableBody.sortable({
     deactivate: function(event, ui) {
       var studentSequence = [];
       $.each('$(tbody tr td:last-child'), function(index, td) {
-
-      })
+        studentSequence.push($(td).attr('data-id'));
+      });
+      localStorage.setItem('studentSequence', JSON.stringify(studentSequence));
     }
-  });*/
+  });
 
   // form Select filling
   for (var i = MIN_AGE; i <= MAX_AGE; i++) {
@@ -89,7 +90,7 @@ $(function() {
   if (localStorage.getItem('studentsOrder')) {
     var order = localStorage.getItem('studentsOrder').split(',');
     $.get({
-      url: 'https://spalah-js-students.herokuapp.com/students',
+      url: URL,
       contentType: 'application/json',
       datatype: 'json',
       success: function(students) {
@@ -100,7 +101,7 @@ $(function() {
     });
   } else {
     $.get({
-      url: 'https://spalah-js-students.herokuapp.com/students',
+      url: URL,
       contentType: 'application/json',
       datatype: 'json',
       success: function(students) {
@@ -115,7 +116,7 @@ $(function() {
   function getStudentById(elem, callback) {
     var selectedStudent = $(elem).parent().data('id');
     $.get({
-      url: 'https://spalah-js-students.herokuapp.com/students/'+ selectedStudent,
+      url: URL + '/'+ selectedStudent,
       contentType: 'application/json',
       datatype: 'json',
       success: callback
@@ -123,7 +124,6 @@ $(function() {
   }
   
   function fillingStudentData(student) {
-    $('div.student-data-container').attr('data-id', student.data.id);
     $('span.student-full-name').text(student.data.first_name + ' ' + 
                                      student.data.last_name);
     $('span.student-age').text(student.data.age);
@@ -140,6 +140,7 @@ $(function() {
     });
     pageReset();
     getStudentById(event.target, function(student) {
+      $('div.student-data-container').attr('data-id', student.data.id);
       fillingStudentData(student);
     });
     event.preventDefault();
@@ -173,6 +174,7 @@ $(function() {
   // edit button handler on $studentDataContainer  !!!неправильно работает ID после show - разобраться!!!
   $editOnDataContainer.click(function(event) {
     editHandler($studentDataContainer, $editOnDataContainer);
+    studentId = null;
     isBackToListing = false;
     event.preventDefault();
   });
@@ -180,17 +182,17 @@ $(function() {
   // edit button handler on $studentListingContainer
   $studentListingContainer.delegate('a.btn.btn-primary', 'click', function(event) {
     editHandler($studentListingContainer, event.target);
-    studentId = $(event.target).parent().data('id');
+    studentId = $(event.target).parent().attr('data-id');
     isBackToListing = true;
     event.preventDefault();
   });
 
   // delete student
   $studentListingContainer.delegate('a.btn.btn-danger', 'click', function(event) {
-    var selectedStudent = $(event.target).parent().data('id');
+    var selectedStudent = $(event.target).parent().attr('data-id');
     if (confirm('Do you really want to delete this student?')) {
       $.ajax({
-        url: 'https://spalah-js-students.herokuapp.com/students/' + selectedStudent,
+        url: URL + '/' + selectedStudent,
         type: 'DELETE', 
         success: function(data) {
           if (data.data) {
@@ -225,7 +227,7 @@ $(function() {
     isBackToListing = true;
     var studentsOrder = [];
     var $studentsOrder = $studentTableBody.find('tr').map(function(index) {
-      return $(this).data('id');
+      return $(this).attr('data-id');
     });
     $studentsOrder.each(function(index) {
       studentsOrder.push($studentsOrder[index]);
@@ -261,17 +263,17 @@ $(function() {
     });
   }
 
-  function createDataObject() { // check syntax
-    var result = {student: {}};
-    result.student.first_name = $('input.first-name').val();
-    result.student.last_name = $('input.last-name').val();
-    result.student.age = $('select.student-age').val();
-    result.student.at_university = $('input.student-at-university').prop("checked");
-    result.student.courses = [];
+  function createDataObject() {
+    var student = {};
+    student.first_name = $('input.first-name').val();
+    student.last_name = $('input.last-name').val();
+    student.age = $('select.student-age').val();
+    student.at_university = $('input.student-at-university').prop("checked");
+    student.courses = [];
     $('input.student-course').each(function(index) {
-      result.student.courses.push($(this).val());
+      student.courses.push($(this).val());
     });
-    return result;
+    return {student};
   }
 
   function submitRequest(url, type, callback) {
@@ -297,8 +299,7 @@ $(function() {
   $('form').submit(function(event) {
     $divAlertDanger.find('li').remove();
     if (isNewStudent) {
-      submitRequest('https://spalah-js-students.herokuapp.com/students', 'POST', 
-                    function(data) {
+      submitRequest(URL, 'POST', function(data) {
         $studentFormContainer.fadeOut(500, function() {
           $studentListingContainer.fadeIn(500);
           $('div.alert.alert-success:contains("created")').fadeIn(500);
@@ -308,8 +309,7 @@ $(function() {
       });
     } else {
       var selectedStudent = studentId || $editOnDataContainer.parent().data('id');
-      submitRequest('https://spalah-js-students.herokuapp.com/students/' + 
-                    selectedStudent, 'PUT', function(data) {
+      submitRequest(URL + '/' + selectedStudent, 'PUT', function(data) {
         $studentFormContainer.fadeOut(500, function() {
           $studentDataContainer.fadeIn(500);
           pageReset();
@@ -317,7 +317,8 @@ $(function() {
           fillingStudentData(data);
           var $updatedTr = $studentTableBody.find('td[data-id=' + data.data.id + 
                                                   ']').parent();
-          if ($updatedTr.find('td:last').data('id') === $('tr:last td:last').data('id')) {
+          if ($updatedTr.find('td:last').attr('data-id') === $('tr:last td:last').
+                                                             attr('data-id')) {
             $studentTableBody.append(studentRowView(data.data));
             $updatedTr.remove();
           } else {
