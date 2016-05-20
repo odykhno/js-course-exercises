@@ -2,7 +2,10 @@
 
 var MIN_AGE = 1;
 var MAX_AGE = 99;
-var studentSequence = JSON.parse(localStorage.getItem('studentSequence'));
+var studentSequence = JSON.parse(localStorage.getItem('studentSequence')).
+                      map(function(elem) {
+  return parseInt(elem);
+});
 var URL = 'https://spalah-js-students.herokuapp.com/students';
 
 $(function() {
@@ -28,13 +31,13 @@ $(function() {
   $studentFormContainer.hide();
   $studentTableBody.empty();
   $divAlertDanger.find('li').remove();
-  window.localStorage.clear();
+  //window.localStorage.clear();
 
-  // sortable !!!ширину строк пофиксить и удалить всё лишнее из кода про локалсторадж!!!
+  // sortable !!!ширину строк пофиксить
   $studentTableBody.sortable({
     deactivate: function(event, ui) {
       var studentSequence = [];
-      $.each('$(tbody tr td:last-child'), function(index, td) {
+      $.each($('tbody tr td:last-child'), function(index, td) {
         studentSequence.push($(td).attr('data-id'));
       });
       localStorage.setItem('studentSequence', JSON.stringify(studentSequence));
@@ -87,31 +90,41 @@ $(function() {
   }
   
   // loading list from localStorage or server
-  if (localStorage.getItem('studentsOrder')) {
-    var order = localStorage.getItem('studentsOrder').split(',');
-    $.get({
-      url: URL,
-      contentType: 'application/json',
-      datatype: 'json',
-      success: function(students) {
-        for (var i = 0; i < order.length; i++) {
-          $studentTableBody.append(studentRowView(students.data[order[i] - 2]));
-        }
-      }
-    });
-  } else {
-    $.get({
-      url: URL,
-      contentType: 'application/json',
-      datatype: 'json',
-      success: function(students) {
-        $.each(students.data, function(index, student) {
+  $.get({
+    url: URL,
+    contentType: "application/json",
+    dataType: 'json',
+    success: function(students) {
+      var currentList = []; // getting current ids from server
+      $.each(students.data, function(index, student) {
+        currentList.push(student.id);
+      });
+      if (studentSequence) {
+        $.each(studentSequence, function(index) { // excluding id of deleted student
+          if (currentList.indexOf(studentSequence[index]) == -1) {
+            studentSequence.splice(index, 1);
+          }
+        });
+        $.each(students.data, function(index, student) { // including id of new student
+          if (studentSequence.indexOf(student.id) == -1) {
+            studentSequence.push(student.id);
+          }
+        });
+        $.each(studentSequence, function(index, id) { // loading students in correct order
+          $.each(students.data, function(index, student) {
+            if (student.id === id) {
+              $studentTableBody.append(studentRowView(student));
+            }
+          });
+        });
+      } else {
+        $.each(students.data, function(index, student) { // loading students without sorting
           $studentTableBody.append(studentRowView(student));
         });
       }
-    });
-  } 
-
+    }
+  });
+   
   // GET request by Id
   function getStudentById(elem, callback) {
     var selectedStudent = $(elem).parent().data('id');
@@ -225,14 +238,6 @@ $(function() {
     });
     isNewStudent = true;
     isBackToListing = true;
-    var studentsOrder = [];
-    var $studentsOrder = $studentTableBody.find('tr').map(function(index) {
-      return $(this).attr('data-id');
-    });
-    $studentsOrder.each(function(index) {
-      studentsOrder.push($studentsOrder[index]);
-    });
-    localStorage.setItem('studentsOrder', studentsOrder);
     event.preventDefault();
   });
 
