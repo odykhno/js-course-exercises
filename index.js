@@ -16,6 +16,7 @@ $(function() {
   var $studentFormContainer = $('div.student-form-container').parent();
   var $studentTableBody = $('tbody');
   var $divAlertDanger = $('div.alert.alert-danger');
+  var $divAlertSuccess = $('div.alert.alert-success');
   var $editOnDataContainer = $studentDataContainer.find('a.btn.btn-primary');
   var $coursesDiv = $('div.student-data-group').has('div.course-group');
   var $studentDataSpans = $('div.student-data-container').find('span');
@@ -31,10 +32,17 @@ $(function() {
   $studentFormContainer.hide();
   $studentTableBody.empty();
   $divAlertDanger.find('li').remove();
-  //window.localStorage.clear();
 
-  // sortable !!!ширину строк пофиксить
+  function fixHelper(e, ui) {
+    ui.children().each(function() {
+      $(this).width($(this).width());
+    });
+    return ui;
+  };
+
+  // sorting
   $studentTableBody.sortable({
+    helper: fixHelper,
     deactivate: function(event, ui) {
       var studentSequence = [];
       $.each($('tbody tr td:last-child'), function(index, td) {
@@ -49,12 +57,12 @@ $(function() {
     $('select.student-age').append($('<option>').text(i).val(i));
   }
 
-  // delete or clean out unnessesary elems !!! протестить!!!
+  // delete or clean out unnessesary elems
   function pageReset() {
     $studentDataSpans.empty();
     $coursesDiv.empty();
     $divAlertDanger.hide();
-    $('div.alert.alert-success').hide();
+    $divAlertSuccess.hide();
     $('form')[0].reset();
     $('input.form-control.student-course').parent().remove();
     for (var i = 1; i <= 2; i++) {
@@ -90,53 +98,62 @@ $(function() {
   }
   
   // loading list from localStorage or server
-  $.get({
-    url: URL,
-    contentType: "application/json",
-    dataType: 'json',
-    success: function(students) {
-      var currentList = []; // getting current ids from server
-      $.each(students.data, function(index, student) {
-        currentList.push(student.id);
-      });
-      if (studentSequence) {
-        $.each(studentSequence, function(index) { // excluding id of deleted student
-          if (currentList.indexOf(studentSequence[index]) == -1) {
-            studentSequence.splice(index, 1);
-          }
-        });
-        $.each(students.data, function(index, student) { // including id of new student
-          if (studentSequence.indexOf(student.id) == -1) {
-            studentSequence.push(student.id);
-          }
-        });
-        $.each(studentSequence, function(index, id) { // loading students in correct order
-          $.each(students.data, function(index, student) {
-            if (student.id === id) {
-              $studentTableBody.append(studentRowView(student));
+  function loadStudents() {
+    $.get({
+      url: URL,
+      contentType: "application/json",
+      dataType: 'json',
+      success: function(students) {
+        var currentList = []; 
+        if (studentSequence) {
+          $.each(students.data, function(index, student) { // including id of new student
+            currentList.push(student.id); // getting current ids from server
+            if (studentSequence.indexOf(student.id) == -1) {
+              studentSequence.push(student.id);
             }
           });
-        });
-      } else {
-        $.each(students.data, function(index, student) { // loading students without sorting
-          $studentTableBody.append(studentRowView(student));
-        });
+          $.each(studentSequence, function(index) { // excluding id of deleted student
+            if (currentList.indexOf(studentSequence[index]) == -1) {
+              studentSequence.splice(index, 1);
+            }
+          });
+          $.each(studentSequence, function(index, id) { // loading students in correct order
+            $.each(students.data, function(index, student) {
+              if (student.id === id) {
+                $studentTableBody.append(studentRowView(student));
+              }
+            });
+          });
+        } else {
+          $.each(students.data, function(index, student) { // loading students without sorting
+            $studentTableBody.append(studentRowView(student));
+          });
+        }
       }
-    }
-  });
+    });
+  } 
+
+  loadStudents(); 
    
-  // GET request by Id
+  // GET request by Id    !!!добавить проверку на редактирование удалённого студента!!!
   function getStudentById(elem, callback) {
-    var selectedStudent = $(elem).parent().data('id');
+    var selectedStudent = $(elem).parent().attr('data-id');
     $.get({
       url: URL + '/'+ selectedStudent,
       contentType: 'application/json',
       datatype: 'json',
+      /*error: function() {
+        if (confirm('Sorry, this student has already been deleted! Click "OK" to reload the page')) { 
+          $studentTableBody.empty();
+          loadStudents();
+        }
+      },*/
       success: callback
     });
   }
   
   function fillingStudentData(student) {
+    $('div.student-data-container').attr('data-id', student.data.id);
     $('span.student-full-name').text(student.data.first_name + ' ' + 
                                      student.data.last_name);
     $('span.student-age').text(student.data.age);
@@ -153,7 +170,6 @@ $(function() {
     });
     pageReset();
     getStudentById(event.target, function(student) {
-      $('div.student-data-container').attr('data-id', student.data.id);
       fillingStudentData(student);
     });
     event.preventDefault();
@@ -170,6 +186,7 @@ $(function() {
   function editHandler(currentContainer, elem) {
     currentContainer.fadeOut(500, function() {
       $studentFormContainer.fadeIn(500);
+      $divAlertSuccess.hide();
     });
     $('input.form-control.student-course').parent().remove();
     isNewStudent = false;
@@ -184,7 +201,7 @@ $(function() {
     });
   }
 
-  // edit button handler on $studentDataContainer  !!!неправильно работает ID после show - разобраться!!!
+  // edit button handler on $studentDataContainer
   $editOnDataContainer.click(function(event) {
     editHandler($studentDataContainer, $editOnDataContainer);
     studentId = null;
@@ -202,6 +219,7 @@ $(function() {
 
   // delete student
   $studentListingContainer.delegate('a.btn.btn-danger', 'click', function(event) {
+    pageReset();
     var selectedStudent = $(event.target).parent().attr('data-id');
     if (confirm('Do you really want to delete this student?')) {
       $.ajax({
@@ -211,6 +229,13 @@ $(function() {
           if (data.data) {
             $studentTableBody.find('td[data-id=' + data.data.id + ']').parent().
                                                                        remove();
+          } 
+        },
+        error: function() {
+          if (confirm('Sorry, this student has already been deleted! ' +
+                      'Click "OK" to reload the page')) {
+            $studentTableBody.empty();
+            loadStudents();
           }
         }
       });
@@ -251,7 +276,7 @@ $(function() {
     event.preventDefault();
   });
 
-  // removing course
+  // removing course   !!!проверить на двузначный номер!!!!
   $studentFormContainer.delegate('a.remove-course', 'click', function(event) {
     var $deletedNumber = $(event.target).parent().children('label').text()[7];
     $(event.target).parent().remove();
@@ -313,7 +338,7 @@ $(function() {
         });
       });
     } else {
-      var selectedStudent = studentId || $editOnDataContainer.parent().data('id');
+      var selectedStudent = studentId || $editOnDataContainer.parent().attr('data-id');
       submitRequest(URL + '/' + selectedStudent, 'PUT', function(data) {
         $studentFormContainer.fadeOut(500, function() {
           $studentDataContainer.fadeIn(500);
