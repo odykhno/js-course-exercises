@@ -2,10 +2,12 @@
 
 var MIN_AGE = 1;
 var MAX_AGE = 99;
-var studentSequence = JSON.parse(localStorage.getItem('studentSequence')).
+if (localStorage.getItem('studentSequence')) {
+  var studentSequence = JSON.parse(localStorage.getItem('studentSequence')).
                       map(function(elem) {
   return parseInt(elem);
-});
+  });
+}
 var URL = 'https://spalah-js-students.herokuapp.com/students';
 
 $(function() {
@@ -106,10 +108,10 @@ $(function() {
       success: function(students) {
         var currentList = []; 
         if (studentSequence) {
-          $.each(students.data, function(index, student) { // including id of new student
+          $.each(students.data, function(index, student) { 
             currentList.push(student.id); // getting current ids from server
             if (studentSequence.indexOf(student.id) == -1) {
-              studentSequence.push(student.id);
+              studentSequence.push(student.id); // including id of new student
             }
           });
           $.each(studentSequence, function(index) { // excluding id of deleted student
@@ -134,20 +136,24 @@ $(function() {
   } 
 
   loadStudents(); 
+
+  // check existence of student
+  function ifStudentIsDeleted() {
+    if (confirm('Sorry, this student has already been deleted! ' +
+                'Click "OK" to reload the page')) {
+      $studentTableBody.empty();
+      loadStudents();
+    }
+  }
    
-  // GET request by Id    !!!добавить проверку на редактирование удалённого студента!!!
+  // GET request by Id
   function getStudentById(elem, callback) {
     var selectedStudent = $(elem).parent().attr('data-id');
     $.get({
       url: URL + '/'+ selectedStudent,
       contentType: 'application/json',
       datatype: 'json',
-      /*error: function() {
-        if (confirm('Sorry, this student has already been deleted! Click "OK" to reload the page')) { 
-          $studentTableBody.empty();
-          loadStudents();
-        }
-      },*/
+      error: ifStudentIsDeleted,
       success: callback
     });
   }
@@ -165,11 +171,11 @@ $(function() {
 
   // show button handler
   $studentListingContainer.delegate('a.btn.btn-default', 'click', function(event) {
-    $studentListingContainer.fadeOut(500, function() {
-      $studentDataContainer.fadeIn(500);
-    });
     pageReset();
     getStudentById(event.target, function(student) {
+      $studentListingContainer.fadeOut(500, function() {
+        $studentDataContainer.fadeIn(500);
+      });
       fillingStudentData(student);
     });
     event.preventDefault();
@@ -184,13 +190,13 @@ $(function() {
   });
 
   function editHandler(currentContainer, elem) {
-    currentContainer.fadeOut(500, function() {
-      $studentFormContainer.fadeIn(500);
-      $divAlertSuccess.hide();
-    });
     $('input.form-control.student-course').parent().remove();
     isNewStudent = false;
     getStudentById(elem, function(student) {
+      currentContainer.fadeOut(500, function() {
+        $studentFormContainer.fadeIn(500);
+        $divAlertSuccess.hide();
+      });
       $('input.first-name').val(student.data.first_name);
       $('input.last-name').val(student.data.last_name);
       $('select.student-age').val(student.data.age);
@@ -231,13 +237,7 @@ $(function() {
                                                                        remove();
           } 
         },
-        error: function() {
-          if (confirm('Sorry, this student has already been deleted! ' +
-                      'Click "OK" to reload the page')) {
-            $studentTableBody.empty();
-            loadStudents();
-          }
-        }
+        error: ifStudentIsDeleted
       });
     }
     event.preventDefault();
@@ -276,7 +276,7 @@ $(function() {
     event.preventDefault();
   });
 
-  // removing course   !!!проверить на двузначный номер!!!!
+  // removing course
   $studentFormContainer.delegate('a.remove-course', 'click', function(event) {
     var $deletedNumber = $(event.target).parent().children('label').text()[7];
     $(event.target).parent().remove();
@@ -338,7 +338,8 @@ $(function() {
         });
       });
     } else {
-      var selectedStudent = studentId || $editOnDataContainer.parent().attr('data-id');
+      var selectedStudent = studentId || $editOnDataContainer.parent().
+                                         attr('data-id');
       submitRequest(URL + '/' + selectedStudent, 'PUT', function(data) {
         $studentFormContainer.fadeOut(500, function() {
           $studentDataContainer.fadeIn(500);
