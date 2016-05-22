@@ -22,6 +22,7 @@ $(function() {
   var $editOnDataContainer = $studentDataContainer.find('a.btn.btn-primary');
   var $coursesDiv = $('div.student-data-group').has('div.course-group');
   var $studentDataSpans = $('div.student-data-container').find('span');
+  var $alertDeleteCreate = $studentListingContainer.find('.alert.alert-success');
   var $divCourseTemplate = $('div.form-group').has('label:contains("Course 1:")')
                            .clone(true);
   var isBackToListing; // indicator for correct back returns
@@ -225,9 +226,9 @@ $(function() {
 
   // delete student
   $studentListingContainer.delegate('a.btn.btn-danger', 'click', function(event) {
-    pageReset();
     var selectedStudent = $(event.target).parent().attr('data-id');
     if (confirm('Do you really want to delete this student?')) {
+      pageReset();
       $.ajax({
         url: URL + '/' + selectedStudent,
         type: 'DELETE', 
@@ -235,8 +236,7 @@ $(function() {
           if (data.data) {
             $studentTableBody.find('td[data-id=' + data.data.id + ']').parent().
                                                                        remove();
-            $('div.alert.alert-success:contains("created")').
-              html('User was successfully deleted').fadeIn(500);
+           $alertDeleteCreate.html('User was successfully deleted').fadeIn(500);
           } 
         },
         error: ifStudentIsDeleted
@@ -334,7 +334,7 @@ $(function() {
       submitRequest(URL, 'POST', function(data) {
         $studentFormContainer.fadeOut(500, function() {
           $studentListingContainer.fadeIn(500);
-          $('div.alert.alert-success:contains("created")').fadeIn(500);
+          $alertDeleteCreate.html('User was successfully created').fadeIn(500);
           $studentTableBody.append(studentRowView(data.data));
           isStudentUpdated = false;
         });
