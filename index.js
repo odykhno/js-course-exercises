@@ -25,7 +25,7 @@ $(function() {
   var $divCourseTemplate = $('div.form-group').has('label:contains("Course 1:")')
                            .clone(true);
   var isBackToListing; // indicator for correct back returns
-  var isStudentUpdated; // indicator for correct back after udating
+  var isStudentUpdated; // indicator for correct back after updating
   var isNewStudent; // indicator for PUT or POST request
   var studentId; // selected student for PUT request
 
@@ -235,6 +235,8 @@ $(function() {
           if (data.data) {
             $studentTableBody.find('td[data-id=' + data.data.id + ']').parent().
                                                                        remove();
+            $('div.alert.alert-success:contains("created")').
+              html('User was successfully deleted').fadeIn(500);
           } 
         },
         error: ifStudentIsDeleted
