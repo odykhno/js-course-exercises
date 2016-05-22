@@ -140,7 +140,7 @@ $(function() {
 
   // check existence of student
   function ifStudentIsDeleted() {
-    if (confirm('Sorry, this student has already been deleted! ' +
+    if (confirm('Sorry, this student has already been deleted! ' + 
                 'Click "OK" to reload the page')) {
       $studentTableBody.empty();
       loadStudents();
@@ -236,7 +236,7 @@ $(function() {
           if (data.data) {
             $studentTableBody.find('td[data-id=' + data.data.id + ']').parent().
                                                                        remove();
-           $alertDeleteCreate.html('User was successfully deleted').fadeIn(500);
+            $alertDeleteCreate.html('User was successfully deleted').fadeIn(500);
           } 
         },
         error: ifStudentIsDeleted
