@@ -1,4 +1,3 @@
-// Yout js code goes here
 'use strict';
 
 var MIN_AGE = 1;
@@ -9,7 +8,6 @@ if (localStorage.getItem('studentSequence')) {
   return parseInt(elem);
   });
 }
-var URL = 'https://spalah-js-students.herokuapp.com/students';
 
 $(function() {
 
@@ -24,8 +22,8 @@ $(function() {
   var $coursesDiv = $('div.student-data-group').has('div.course-group');
   var $studentDataSpans = $('div.student-data-container').find('span');
   var $alertDeleteCreate = $studentListingContainer.find('.alert.alert-success');
-  var $divCourseTemplate = $('div.form-group').has('label:contains("Course 1:")')
-                           .clone(true);
+  var $divAddCourse = $('a.add-course').parent();
+
   var isBackToListing; // indicator for correct back returns
   var isStudentUpdated; // indicator for correct back after updating
   var isNewStudent; // indicator for PUT or POST request
@@ -70,54 +68,37 @@ $(function() {
     $('form')[0].reset();
     $('input.form-control.student-course').parent().remove();
     for (var i = 1; i <= 2; i++) {
-      formStudentCourseView(i, '');
+      $divAddCourse.before(Mustache.render(ADD_COURSE, {number: i, course: ''}));
     }
-  }
-
-  function formStudentCourseView(number, course) {
-    var $newCourse = $divCourseTemplate.clone(true);
-    $newCourse.children('label').text('Course ' + number + ':');
-    $newCourse.children('input').val(course);
-    return $('a.add-course').parent().before($newCourse);
   }
   
   // loading list from localStorage or server
   function loadStudents() {
-    $.get({
-      url: URL,
-      contentType: "application/json",
-      dataType: 'json',
-      success: function(students) {
-        var currentList = []; 
-        if (studentSequence) {
-          $.each(students.data, function(index, student) { 
-            currentList.push(student.id); // getting current ids from server
-            if (studentSequence.indexOf(student.id) == -1) {
-              studentSequence.push(student.id); // including id of new student
+    student.getAll(function(students) {
+      if (studentSequence) {
+        var currentList = _.map(students.data, function(student) { // getting current ids from server
+          return student.id;
+        });
+        studentSequence.push(_.difference(currentList, studentSequence)); // including ids of new students
+        _.chain(studentSequence).flatten().pullAll(_.difference(studentSequence, 
+                                                   currentList)).value(); //excluding ids of deleted students
+        studentSequence = _.flatten(studentSequence);
+        $.each(studentSequence, function(index, id) { // loading students in correct order
+          $.each(students.data, function(index, student) {
+            if (student.id === id) {
+              $studentTableBody.append(Mustache.render(STUDENT_ROW_VIEW, student));
             }
           });
-          $.each(studentSequence, function(index) { // excluding id of deleted student
-            if (currentList.indexOf(studentSequence[index]) == -1) {
-              studentSequence.splice(index, 1);
-            }
-          });
-          $.each(studentSequence, function(index, id) { // loading students in correct order
-            $.each(students.data, function(index, student) {
-              if (student.id === id) {
-                $studentTableBody.append(Mustache.render(STUDENT_ROW_VIEW, student));
-              }
-            });
-          });
-        } else {
-          $.each(students.data, function(index, student) { // loading students without sorting
-            $studentTableBody.append(Mustache.render(STUDENT_ROW_VIEW, student));
-          });
-        }
+        });
+      } else {
+        $.each(students.data, function(index, student) { // loading students without sorting
+          $studentTableBody.append(Mustache.render(STUDENT_ROW_VIEW, student));
+        });
       }
     });
   } 
 
-  loadStudents(); 
+  loadStudents();
 
   // check existence of student
   function ifStudentIsDeleted() {
@@ -126,18 +107,6 @@ $(function() {
       $studentTableBody.empty();
       loadStudents();
     }
-  }
-   
-  // GET request by Id
-  function getStudentById(elem, callback) {
-    var selectedStudent = $(elem).parent().attr('data-id');
-    $.get({
-      url: URL + '/'+ selectedStudent,
-      contentType: 'application/json',
-      datatype: 'json',
-      error: ifStudentIsDeleted,
-      success: callback
-    });
   }
   
   function fillingStudentData(student) {
@@ -155,7 +124,7 @@ $(function() {
   // show button handler
   $studentListingContainer.delegate('a.btn.btn-default', 'click', function(event) {
     pageReset();
-    getStudentById(event.target, function(student) {
+    student.getStudentById(event.target, ifStudentIsDeleted, function(student) {
       $studentListingContainer.fadeOut(500, function() {
         $studentDataContainer.fadeIn(500);
       });
@@ -174,8 +143,9 @@ $(function() {
 
   function editHandler(currentContainer, elem) {
     $('input.form-control.student-course').parent().remove();
+    $divAlertDanger.hide();
     isNewStudent = false;
-    getStudentById(elem, function(student) {
+    student.getStudentById(elem, ifStudentIsDeleted, function(student) {
       currentContainer.fadeOut(500, function() {
         $studentFormContainer.fadeIn(500);
         $divAlertSuccess.hide();
@@ -185,7 +155,8 @@ $(function() {
       $('select.student-age').val(student.data.age);
       $('input.student-at-university').prop("checked", student.data.at_university);
       $.each(student.data.courses, function(index) {
-        formStudentCourseView(index + 1, student.data.courses[index]);
+        $divAddCourse.before(Mustache.render(ADD_COURSE, {number: index + 1, 
+                             course: student.data.courses[index]}));
       });
     });
   }
@@ -208,20 +179,14 @@ $(function() {
 
   // delete student
   $studentListingContainer.delegate('a.btn.btn-danger', 'click', function(event) {
-    var selectedStudent = $(event.target).parent().attr('data-id');
     if (confirm('Do you really want to delete this student?')) {
       pageReset();
-      $.ajax({
-        url: URL + '/' + selectedStudent,
-        type: 'DELETE', 
-        success: function(data) {
-          if (data.data) {
-            $studentTableBody.find('td[data-id=' + data.data.id + ']').parent().
-                                                                       remove();
-            $alertDeleteCreate.html('User was successfully deleted').fadeIn(500);
-          } 
-        },
-        error: ifStudentIsDeleted
+      student.remove(event.target, ifStudentIsDeleted, function(data) {
+        if (data.data) {
+          $studentTableBody.find('td[data-id=' + data.data.id + ']').parent().
+                                                                     remove();
+          $alertDeleteCreate.html('User was successfully deleted').fadeIn(500);
+        } 
       });
     }
     event.preventDefault();
@@ -253,10 +218,8 @@ $(function() {
   // adding course
   $('a.add-course').click(function(event) {
     var $studentCoursesCount = $('input.student-course');
-    var $newCourse = $divCourseTemplate.clone(true);
-    $newCourse.children('label').text('Course ' + 
-                                     ($studentCoursesCount.length + 1) + ':');
-    $(this).parent().before($newCourse);
+    $(this).parent().before(Mustache.render(ADD_COURSE, 
+                        {number: $studentCoursesCount.length + 1, course: ''}));
     event.preventDefault();
   });
 
@@ -290,29 +253,18 @@ $(function() {
     return {student};
   }
 
-  function submitRequest(url, type, callback) {
-    $.ajax({
-      url: url,
-      type: type,
-      data: createDataObject(),
-      success: function(data) {
-        if (data.errors) {
-          $divAlertDanger.fadeIn(500);
-          $.each(data.errors, function(index, error) {
-            $('ul').append(Mustache.render(ERROR_LI, {error: error}));
-          });    
-        } else {
-          callback(data);
-        }
-      }
-    }); 
-  }
+function ifDataErrors(data) {
+  $divAlertDanger.fadeIn(500);
+  $.each(data.errors, function(index, error) {
+    $('ul').append(Mustache.render(ERROR_LI, {error: error}));
+  });    
+}
 
-  // submit data (add or update)
+// submit data (add or update)
   $('form').submit(function(event) {
     $divAlertDanger.find('li').remove();
     if (isNewStudent) {
-      submitRequest(URL, 'POST', function(data) {
+      student.post(createDataObject(), ifDataErrors, function(data) {
         $studentFormContainer.fadeOut(500, function() {
           $studentListingContainer.fadeIn(500);
           $alertDeleteCreate.html('User was successfully created').fadeIn(500);
@@ -323,7 +275,7 @@ $(function() {
     } else {
       var selectedStudent = studentId || $editOnDataContainer.parent().
                                          attr('data-id');
-      submitRequest(URL + '/' + selectedStudent, 'PUT', function(data) {
+      student.put(selectedStudent, createDataObject(), ifDataErrors, function(data) {
         $studentFormContainer.fadeOut(500, function() {
           $studentDataContainer.fadeIn(500);
           pageReset();
@@ -336,12 +288,13 @@ $(function() {
             $studentTableBody.append(Mustache.render(STUDENT_ROW_VIEW, data.data));
             $updatedTr.remove();
           } else {
-            $(Mustache.render(STUDENT_ROW_VIEW, data.data)).insertBefore($updatedTr.next());
+            $(Mustache.render(STUDENT_ROW_VIEW, data.data)).insertBefore
+                                                            ($updatedTr.next());
             $updatedTr.remove();
           }         
         });
       });
-    } 
+    }
     event.preventDefault();
   });
 
