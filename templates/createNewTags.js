@@ -25,3 +25,10 @@ var ERROR_LI = '\
 <li class="list-group-item">{{error}}</li>\
 ';
 
+var ADD_COURSE = '\
+<div class="form-group">\
+  <label>Course {{number}}:</label>\
+  <input name="courses[]" class="form-control student-course" value={{course}}>\
+  <a href="#" class="remove-course">Remove course</a>\
+</div>\
+';
