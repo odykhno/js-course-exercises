@@ -3,10 +3,10 @@
 requirejs.config({
     baseUrl: './',
     paths: {
-        jquery: 'js/jquery.min',
-        jqueryUI: 'js/jquery-ui.min',
-        lodash: 'js/lodash',
-        mustache: 'js/mustache.min'
+        jquery: 'bower_components/jquery/dist/jquery.min',
+        jqueryUI: 'bower_components/jquery-ui/jquery-ui.min',
+        lodash: 'bower_components/lodash/lodash',
+        mustache: 'bower_components/mustache.js/mustache.min'
     }
 });
 
